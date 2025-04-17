@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# TizeLX v2.1 - Terminal Weaponizer
-# By: DarkHacker (Improved Version)
+# TizeLX v2.2 - Terminal Weaponizer
+# By: DarkHacker (Versión mejorada)
 
 import os
 import gi
-import json
 import subprocess
-import hashlib
 import logging
 from datetime import datetime
 from cryptography.fernet import Fernet
@@ -16,9 +14,11 @@ from getpass import getuser
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Gdk, GLib
 
-# Configure logging
+# Configuración de logging
+log_dir = os.path.expanduser("~/.tizelx")
+os.makedirs(log_dir, exist_ok=True)
 logging.basicConfig(
-    filename=os.path.expanduser("~/.tizelx/tizelx.log"),
+    filename=os.path.join(log_dir, "tizelx.log"),
     level=logging.DEBUG,
     format="%(asctime)s - %(levelname)s - %(message)s"
 )
@@ -29,23 +29,22 @@ class CyberTerminal(Gtk.Window):
         self.set_default_size(1100, 750)
         self.set_position(Gtk.WindowPosition.CENTER)
 
-        # Security configuration
+        # Configuración de seguridad
         self.encryption_key = self.load_or_create_key()
         self.terminal = self.detect_terminal()
-        self.hacker_font = "Monospace 10"
 
-        # Initialize UI
+        # Inicializar UI
         self.set_style()
         self.create_ui()
-        self.load_config()
 
     def set_style(self):
-        """Set advanced hacker-style UI with animations."""
+        """Estilo visual moderno con CSS compatible."""
         css = """
         * {
             background-color: #0A0A0A;
             color: #20C20E;
-            font: Monospace 10;
+            font-family: Monospace;
+            font-size: 10px;
             border-color: #20C20E;
         }
         .danger {
@@ -68,7 +67,7 @@ class CyberTerminal(Gtk.Window):
         )
 
     def create_ui(self):
-        """Create the main UI with tabs and status bar."""
+        """Crea la interfaz principal con pestañas y barra de estado."""
         main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
 
         # Header
@@ -76,20 +75,20 @@ class CyberTerminal(Gtk.Window):
         header.set_xalign(0)
         header.set_margin_start(10)
 
-        # Notebook for tabs
+        # Notebook para pestañas
         self.notebook = Gtk.Notebook()
         self.notebook.set_border_width(5)
 
-        # Tabs
+        # Crear pestañas
         self.create_terminal_tab()
         self.create_exploit_tab()
 
-        # Status bar
+        # Barra de estado
         self.status = Gtk.Statusbar()
         self.status_id = self.status.get_context_id("system")
         self.update_status("READY")
 
-        # Assemble UI
+        # Ensamblar UI
         main_box.pack_start(header, False, False, 0)
         main_box.pack_start(self.notebook, True, True, 0)
         main_box.pack_end(self.status, False, False, 0)
@@ -97,10 +96,10 @@ class CyberTerminal(Gtk.Window):
         self.add(main_box)
 
     def create_terminal_tab(self):
-        """Create the terminal customization tab."""
+        """Crea la pestaña de personalización del terminal."""
         tab_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
 
-        # Theme selector
+        # Selector de temas
         theme_box = Gtk.Box(spacing=10)
         self.theme_combo = Gtk.ComboBoxText()
         for theme in ["DarkMatrix", "MrRobot", "CyberPunk", "StealthMode"]:
@@ -108,21 +107,21 @@ class CyberTerminal(Gtk.Window):
         theme_box.pack_start(Gtk.Label(label="SELECT THEME:"), False, False, 0)
         theme_box.pack_start(self.theme_combo, False, False, 0)
 
-        # Config editor
+        # Editor de configuración
         scrolled = Gtk.ScrolledWindow()
         self.config_editor = Gtk.TextView()
         self.config_editor.set_monospace(True)
         self.config_editor.set_wrap_mode(Gtk.WrapMode.NONE)
         scrolled.add(self.config_editor)
 
-        # Action buttons
+        # Botones de acción
         btn_box = Gtk.Box(spacing=5)
         apply_btn = Gtk.Button(label="APPLY CONFIG")
         apply_btn.connect("clicked", self.apply_terminal_config)
         apply_btn.get_style_context().add_class("hacker-mode")
         btn_box.pack_end(apply_btn, False, False, 0)
 
-        # Assemble tab
+        # Ensamblar pestaña
         tab_box.pack_start(theme_box, False, False, 5)
         tab_box.pack_start(scrolled, True, True, 0)
         tab_box.pack_end(btn_box, False, False, 5)
@@ -130,10 +129,10 @@ class CyberTerminal(Gtk.Window):
         self.notebook.append_page(tab_box, Gtk.Label(label=">_ TERMINAL"))
 
     def create_exploit_tab(self):
-        """Create the exploit tools tab."""
+        """Crea la pestaña de herramientas de hacking."""
         tab_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
 
-        # Tool buttons
+        # Botones de herramientas
         tools = [
             ("NETSCAN", "nmap -T4 -A -v"),
             ("CRACK", "john --format=sha256"),
@@ -152,7 +151,7 @@ class CyberTerminal(Gtk.Window):
         self.notebook.append_page(tab_box, Gtk.Label(label=">_ EXPLOITS"))
 
     def apply_terminal_config(self, widget):
-        """Apply the terminal configuration."""
+        """Aplica la configuración del terminal."""
         try:
             theme = self.theme_combo.get_active_text()
             config = self.config_editor.get_buffer().get_text(
@@ -160,7 +159,6 @@ class CyberTerminal(Gtk.Window):
                 self.config_editor.get_buffer().get_end_iter(),
                 False
             )
-            # Log the applied configuration
             logging.info(f"Applying theme: {theme}")
             self.update_status(f"CONFIG APPLIED: {theme}")
         except Exception as e:
@@ -168,7 +166,7 @@ class CyberTerminal(Gtk.Window):
             self.update_status(f"ERROR: {str(e)}", True)
 
     def run_hacker_tool(self, widget, command):
-        """Run a hacking tool."""
+        """Ejecuta una herramienta de hacking."""
         try:
             subprocess.Popen(["x-terminal-emulator", "-e", command])
             self.update_status(f"RUNNING: {command.split()[0]}")
@@ -177,7 +175,7 @@ class CyberTerminal(Gtk.Window):
             self.update_status(f"TOOL ERROR: {str(e)}", True)
 
     def update_status(self, message, error=False):
-        """Update the status bar."""
+        """Actualiza la barra de estado."""
         context = self.status.get_style_context()
         if error:
             context.add_class("danger")
@@ -185,11 +183,8 @@ class CyberTerminal(Gtk.Window):
         self.status.push(self.status_id, f"STATUS: {message} | {datetime.now().strftime('%H:%M:%S')}")
 
     def load_or_create_key(self):
-        """Load or create a cryptographic key."""
-        key_dir = os.path.expanduser("~/.tizelx")
-        os.makedirs(key_dir, mode=0o700, exist_ok=True)
-        key_path = os.path.join(key_dir, "tizelx.key")
-
+        """Carga o crea una clave criptográfica."""
+        key_path = os.path.join(log_dir, "tizelx.key")
         if os.path.exists(key_path):
             with open(key_path, "rb") as f:
                 return f.read()
@@ -201,7 +196,7 @@ class CyberTerminal(Gtk.Window):
             return key
 
     def detect_terminal(self):
-        """Detect the current terminal emulator."""
+        """Detecta el terminal actual."""
         try:
             term = os.environ.get('TERM_PROGRAM', '')
             if not term:
