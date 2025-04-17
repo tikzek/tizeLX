@@ -4,7 +4,7 @@ Installing TizeLX on Kali Linux
 First, open a terminal (Ctrl + Alt + T). Ensure your system is updated with sudo apt update && sudo apt upgrade -y.
 
 Clone the TizeLX repository using:
-git clone https://github.com/tu_usuario/tizelx.git
+git clone https://github.com/tikzek/tizelx.git
 
 Navigate into the folder:
 cd tizelx
